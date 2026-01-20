@@ -96,6 +96,7 @@ const checkAndSendReminders = async () => {
                     daysRemaining
                 );
 
+                if (emailSent) {
                 // Log the reminder attempt
                 await ReminderLog.create({
                     subscription: subscription._id,
@@ -103,8 +104,6 @@ const checkAndSendReminders = async () => {
                     emailSent,
                     recipientEmail: subscription.user.email
                 });
-
-                if (emailSent) {
                     sentCount++;
                 } else {
                     failedCount++;
