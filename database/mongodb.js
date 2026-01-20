@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
-// import dns from "node:dns/promises";
+import dns from "node:dns/promises";
 
 import { DB_URI, NODE_ENV } from '../config/env.js';
 
 // Set custom DNS servers to avoid potential DNS resolution issues with MongoDB Atlas
-// dns.setServers(["1.1.1.1"]);
+dns.setServers(["1.1.1.1"]);
 
 if (!DB_URI) {
     throw new Error('DB_URI is not defined in environment variables');
