@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createSubscription, getAllSubscriptions, getSubscriptionDetails, getUserSubscriptions, updateSubscription, deleteSubscription, upcomingRenewals  } from "../controllers/subscription.controller.js";
+import { createSubscription, getAllSubscriptions, getSubscriptionDetails, getUserSubscriptions, updateSubscription, deleteSubscription, upcomingRenewals, cancelSubscription  } from "../controllers/subscription.controller.js";
 import authorize from "../middlewares/auth.middleware.js";
 
 const subscriptionRouter = Router();
@@ -17,7 +17,7 @@ subscriptionRouter.delete('/:id', authorize, deleteSubscription);
 
 subscriptionRouter.get('/user/:id', authorize, getUserSubscriptions);
 
-subscriptionRouter.put('/:id/cancel', authorize, updateSubscription);
+subscriptionRouter.put('/:id/cancel', authorize, cancelSubscription);
 
 
 export default subscriptionRouter;

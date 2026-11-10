@@ -106,6 +106,33 @@ const updateSubscription = async (req, res, next) => {
     }
 }
 
+const cancelSubscription = async (req, res, next) => {
+    try {
+        const subscription = await Subscription.findById(req.params.id);
+        if(!subscription){
+            const error = new Error('Subscription not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        if(req.user._id != subscription.user.toString()){
+            const error = new Error('Unauthorized access to cancel this subscription');
+            error.statusCode = 403;
+            throw error;
+        }
+
+        subscription.status = 'cancelled';
+        await subscription.save();
+
+        res.status(200).json({
+            success: true,
+            data: subscription
+        });
+    } catch (e) {
+        next(e);
+    }
+}
+
 const deleteSubscription = async (req, res, next) => {
     try {
         const subscription = await Subscription.findById(req.params.id);
@@ -154,5 +181,6 @@ export {
     getUserSubscriptions,
     updateSubscription,
     deleteSubscription,
+    cancelSubscription,
     upcomingRenewals
 };

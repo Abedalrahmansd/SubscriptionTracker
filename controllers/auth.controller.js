@@ -4,6 +4,13 @@ import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../config/env.js";
 
+// Never send the stored password hash back to the client
+const withoutPassword = (userDoc) => {
+    const safeUser = userDoc.toObject();
+    delete safeUser.password;
+    return safeUser;
+};
+
 export const signUp = async (req, res, next) => 
     {
 
@@ -44,7 +51,7 @@ export const signUp = async (req, res, next) =>
                 success: true,
                 data: {
                     token: token,
-                    user: newUsers[0]
+                    user: withoutPassword(newUsers[0])
                 }
             });
             
@@ -87,7 +94,7 @@ export const signIn = async (req, res, next) =>
                 success: true,
                 data: {
                     token,
-                    user
+                    user: withoutPassword(user)
                 }
             });
         } catch (error) {
