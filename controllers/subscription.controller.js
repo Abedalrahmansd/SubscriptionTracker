@@ -22,7 +22,7 @@ const createSubscription = async (req, res, next) => {
 const getAllSubscriptions = async (req, res, next) => {
     try {
 
-        const subscriptions = await Subscription.find();
+        const subscriptions = await Subscription.find({ user: req.user._id });
 
         res.status(200).json({
             success: true,
@@ -42,6 +42,13 @@ const getSubscriptionDetails = async (req, res, next) => {
             error.statusCode = 404;
             throw error;
         }
+
+        if(req.user._id != subscription.user.toString()){
+            const error = new Error('Unauthorized access to this subscription');
+            error.statusCode = 403;
+            throw error;
+        }
+
         res.status(200).json({
             success: true,
             data: subscription
@@ -83,7 +90,11 @@ const updateSubscription = async (req, res, next) => {
             throw error;
         }
 
-        Object.assign(subscription, req.body);
+        // Never let the request body change ownership or the document id
+        const updates = { ...req.body };
+        delete updates.user;
+        delete updates._id;
+        Object.assign(subscription, updates);
         await subscription.save();
 
         res.status(200).json({
@@ -97,18 +108,21 @@ const updateSubscription = async (req, res, next) => {
 
 const deleteSubscription = async (req, res, next) => {
     try {
-        const subscription = await Subscription.findByIdAndDelete(req.params.id);
+        const subscription = await Subscription.findById(req.params.id);
         if(!subscription){
             const error = new Error('Subscription not found');
             error.statusCode = 404;
             throw error;
         }
 
+        // Check ownership BEFORE deleting anything
         if(req.user._id != subscription.user.toString()){
             const error = new Error('Unauthorized access to delete this subscription');
             error.statusCode = 403;
             throw error;
         }
+
+        await subscription.deleteOne();
 
 
         res.status(200).json({
@@ -123,7 +137,7 @@ const deleteSubscription = async (req, res, next) => {
 const upcomingRenewals = async (req, res, next) => {
     try {
         const now = new Date();
-        const subscriptions = await Subscription.find({ renewalDate: { $gte: now, $lte: new Date(now.getTime() + 7*24*60*60*1000) } }); // Next 7 days
+        const subscriptions = await Subscription.find({ user: req.user._id, renewalDate: { $gte: now, $lte: new Date(now.getTime() + 7*24*60*60*1000) } }); // Next 7 days
         res.status(200).json({
             success: true,
             data: subscriptions

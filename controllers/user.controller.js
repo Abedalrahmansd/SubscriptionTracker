@@ -3,7 +3,8 @@ import User from '../models/user.model.js';
 export const getUsers = async (req, res, next) => {
     try {
         
-        const users = await User.find().select('-password');
+        // Only the signed-in user's own record: there is no admin role, so listing everyone would expose other users' emails
+        const users = await User.find({ _id: req.user._id }).select('-password');
 
         res.status(200).json({
             success: true,
@@ -17,6 +18,12 @@ export const getUsers = async (req, res, next) => {
 
 export const getUser = async (req, res, next) => {
     try {
+
+        if (req.user._id != req.params.id) {
+            const error = new Error('Unauthorized access to this user');
+            error.statusCode = 403;
+            throw error;
+        }
 
         const user = await User.findById(req.params.id).select('-password');
 

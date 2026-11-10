@@ -4,7 +4,7 @@ import authorize from "../middlewares/auth.middleware.js";
 
 const subscriptionRouter = Router();
 
-subscriptionRouter.get('/', getAllSubscriptions);
+subscriptionRouter.get('/', authorize, getAllSubscriptions);
 
 subscriptionRouter.get('/upcoming-renewals', authorize, upcomingRenewals);
 
