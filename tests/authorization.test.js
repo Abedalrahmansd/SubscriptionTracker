@@ -1,6 +1,6 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startReplSet, startApp, seedUser, seedSubscription } from './helpers/harness.js';
+import { startReplSet, startApp, seedUser, seedSubscription, REMINDER_KEY } from './helpers/harness.js';
 
 // Each describe block uses its own app instance: the app's rate limiter allows only
 // 10 requests per IP per 2 minutes, so every group stays below 10 requests.
@@ -32,12 +32,34 @@ describe('unauthenticated requests are refused', () => {
         assert.equal(doc.price, 15.99);
     });
 
-    it('POST /workflow/subscription/reminder without a token -> 401; with a token it runs', async () => {
-        const refused = await app.request('POST', '/api/v1/workflow/subscription/reminder');
-        assert.equal(refused.status, 401);
-        const allowed = await app.request('POST', '/api/v1/workflow/subscription/reminder', { token: alice.token });
-        assert.equal(allowed.status, 200);
-        assert.equal(allowed.body.data.success, true);
+    it('POST /workflow/subscription/reminder needs the secret key: no key, a wrong key or a normal user token -> 401', async () => {
+        const url = '/api/v1/workflow/subscription/reminder';
+        assert.equal((await app.request('POST', url)).status, 401);
+        assert.equal((await app.request('POST', url, { headers: { 'x-reminder-key': 'wrong-key' } })).status, 401);
+        assert.equal((await app.request('POST', url, { token: alice.token })).status, 401);
+    });
+
+    it('POST /workflow/subscription/reminder with the right key runs the job', async () => {
+        const res = await app.request('POST', '/api/v1/workflow/subscription/reminder', { headers: { 'x-reminder-key': REMINDER_KEY } });
+        assert.equal(res.status, 200);
+        assert.equal(res.body.data.success, true);
+    });
+});
+
+describe('reminder trigger is disabled when no key is configured', () => {
+    let replSet, app;
+    before(async () => {
+        replSet = await startReplSet();
+        app = await startApp(replSet, 'authz_nokey', { REMINDER_TRIGGER_KEY: '' });
+    });
+    after(async () => {
+        await app?.stop();
+        await replSet?.stop();
+    });
+
+    it('returns 503 even with a header that looks right', async () => {
+        const res = await app.request('POST', '/api/v1/workflow/subscription/reminder', { headers: { 'x-reminder-key': '' } });
+        assert.equal(res.status, 503);
     });
 });
 

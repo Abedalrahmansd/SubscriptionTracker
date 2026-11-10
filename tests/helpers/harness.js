@@ -26,7 +26,9 @@ const freePort = () => new Promise((resolve, reject) => {
 
 export const startReplSet = () => MongoMemoryReplSet.create({ replSet: { count: 1 } });
 
-export const startApp = async (replSet, dbName) => {
+export const REMINDER_KEY = 'test-only-reminder-key';
+
+export const startApp = async (replSet, dbName, extraEnv = {}) => {
     const port = await freePort();
     const uri = replSet.getUri(dbName);
     const child = spawn(process.execPath, ['app.js'], {
@@ -40,6 +42,8 @@ export const startApp = async (replSet, dbName) => {
             JWT_EXPIRES_IN: '1h',
             EMAIL_USER: 'test@example.invalid',
             EMAIL_PASSWORD: 'not-a-real-password',
+            REMINDER_TRIGGER_KEY: REMINDER_KEY,
+            ...extraEnv,
         },
         stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -60,8 +64,8 @@ export const startApp = async (replSet, dbName) => {
     const db = client.db(dbName);
     const base = `http://127.0.0.1:${port}`;
 
-    const request = async (method, url, { token, body } = {}) => {
-        const headers = { 'Content-Type': 'application/json', 'User-Agent': BROWSER_UA };
+    const request = async (method, url, { token, body, headers: extraHeaders } = {}) => {
+        const headers = { 'Content-Type': 'application/json', 'User-Agent': BROWSER_UA, ...extraHeaders };
         if (token) headers.Authorization = `Bearer ${token}`;
         const res = await fetch(base + url, { method, headers, body: body ? JSON.stringify(body) : undefined });
         const text = await res.text();

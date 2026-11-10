@@ -33,6 +33,7 @@ JWT_SECRET=<a long random string>
 JWT_EXPIRES_IN=1d
 EMAIL_USER=<gmail address that sends the reminders>
 EMAIL_PASSWORD=<a Gmail app password>
+REMINDER_TRIGGER_KEY=<optional: a long random string that enables the manual reminder endpoint>
 ```
 
 See `EMAIL_SETUP_GUIDE.md` for how to get a Gmail app password. Then:
@@ -62,7 +63,7 @@ Base path `/api/v1`. Send the token as `Authorization: Bearer <token>`. The API 
 | PUT | `/subscriptions/:id/cancel` | yes | Mark one of your subscriptions as `cancelled` (403 if not yours) |
 | GET | `/users` | yes | Your own user record (there is no admin role) |
 | GET | `/users/:id` | yes | Your own user record (403 for any other id) |
-| POST | `/workflow/subscription/reminder` | yes | Run the reminder job now and return the counts (any signed-in user; it is the same idempotent job the hourly cron runs) |
+| POST | `/workflow/subscription/reminder` | secret key | Run the reminder job now and return the counts. Send the key as the `x-reminder-key` header; if `REMINDER_TRIGGER_KEY` is not set the endpoint is disabled (503) |
 
 `POST /auth/sign-out` is a disabled stub, and `POST /users`, `PUT /users/:id`, `DELETE /users/:id` are placeholders. Errors look like `{ "success": false, "error": "<message>" }`.
 
