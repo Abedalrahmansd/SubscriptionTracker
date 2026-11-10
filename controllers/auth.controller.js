@@ -37,7 +37,7 @@ export const signUp = async (req, res, next) =>
             //create token
             const token = jwt.sign({id:newUsers[0]._id}, JWT_SECRET, {expiresIn: JWT_EXPIRES_IN});
 
-            session.commitTransaction();
+            await session.commitTransaction();
             session.endSession();
 
             res.status(201).json({
