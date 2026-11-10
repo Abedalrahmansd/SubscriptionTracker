@@ -20,6 +20,8 @@ describe('POST /api/v1/auth/sign-up', () => {
         assert.equal(res.status, 201);
         assert.equal(res.body.success, true);
         assert.ok(res.body.data.token);
+        assert.equal(res.body.data.user.email, 'demo.user@example.com');
+        assert.equal('password' in res.body.data.user, false, 'the password hash must not be returned');
 
         // Give a (previously) unhandled commit rejection time to crash the process.
         await new Promise(r => setTimeout(r, 500));
@@ -35,6 +37,7 @@ describe('POST /api/v1/auth/sign-up', () => {
         });
         assert.equal(res.status, 200);
         assert.ok(res.body.data.token);
+        assert.equal('password' in res.body.data.user, false, 'the password hash must not be returned');
     });
 
     it('rejects a duplicate email with 409 and keeps a single user', async () => {

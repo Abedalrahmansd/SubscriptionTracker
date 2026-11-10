@@ -31,6 +31,14 @@ describe('unauthenticated requests are refused', () => {
         const doc = await app.db.collection('subscriptions').findOne({ _id: sub._id });
         assert.equal(doc.price, 15.99);
     });
+
+    it('POST /workflow/subscription/reminder without a token -> 401; with a token it runs', async () => {
+        const refused = await app.request('POST', '/api/v1/workflow/subscription/reminder');
+        assert.equal(refused.status, 401);
+        const allowed = await app.request('POST', '/api/v1/workflow/subscription/reminder', { token: alice.token });
+        assert.equal(allowed.status, 200);
+        assert.equal(allowed.body.data.success, true);
+    });
 });
 
 describe('one user cannot read another user\'s data', () => {
@@ -122,6 +130,13 @@ describe('one user cannot change or delete another user\'s data', () => {
         const res = await app.request('PUT', `/api/v1/subscriptions/${aliceSub.id}/cancel`, { token: bob.token, body: { status: 'cancelled' } });
         assert.equal(res.status, 403);
         assert.equal((await stored()).status, 'active');
+    });
+
+    it('PUT /:id/cancel by the owner marks the subscription as cancelled', async () => {
+        const res = await app.request('PUT', `/api/v1/subscriptions/${aliceSub.id}/cancel`, { token: alice.token });
+        assert.equal(res.status, 200);
+        assert.equal(res.body.data.status, 'cancelled');
+        assert.equal((await stored()).status, 'cancelled');
     });
 
     it('the owner cannot hand a subscription to another user through PUT', async () => {

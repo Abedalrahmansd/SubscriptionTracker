@@ -50,8 +50,8 @@ Base path `/api/v1`. Send the token as `Authorization: Bearer <token>`. The API 
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/auth/sign-up` | no | Create an account → `{ token, user }` |
-| POST | `/auth/sign-in` | no | Sign in → `{ token, user }` |
+| POST | `/auth/sign-up` | no | Create an account → `{ token, user }` (the user object never includes the password hash) |
+| POST | `/auth/sign-in` | no | Sign in → `{ token, user }` (no password hash) |
 | GET | `/subscriptions` | yes | Your subscriptions |
 | POST | `/subscriptions` | yes | Create a subscription (owner is taken from the token) |
 | GET | `/subscriptions/:id` | yes | One of your subscriptions (403 if it is someone else's) |
@@ -59,10 +59,10 @@ Base path `/api/v1`. Send the token as `Authorization: Bearer <token>`. The API 
 | DELETE | `/subscriptions/:id` | yes | Delete one of your subscriptions (403 if not yours, nothing is deleted) |
 | GET | `/subscriptions/user/:id` | yes | Your subscriptions by user id (403 for any other id) |
 | GET | `/subscriptions/upcoming-renewals` | yes | Your subscriptions renewing in the next 7 days |
-| PUT | `/subscriptions/:id/cancel` | yes | Same handler as the update route |
+| PUT | `/subscriptions/:id/cancel` | yes | Mark one of your subscriptions as `cancelled` (403 if not yours) |
 | GET | `/users` | yes | Your own user record (there is no admin role) |
 | GET | `/users/:id` | yes | Your own user record (403 for any other id) |
-| POST | `/workflow/subscription/reminder` | no | Run the reminder job now and return the counts |
+| POST | `/workflow/subscription/reminder` | yes | Run the reminder job now and return the counts (any signed-in user; it is the same idempotent job the hourly cron runs) |
 
 `POST /auth/sign-out` is a disabled stub, and `POST /users`, `PUT /users/:id`, `DELETE /users/:id` are placeholders. Errors look like `{ "success": false, "error": "<message>" }`.
 
@@ -72,12 +72,9 @@ Base path `/api/v1`. Send the token as `Authorization: Bearer <token>`. The API 
 npm test
 ```
 
-Uses Node's built-in test runner (`node:test`) and `mongodb-memory-server`, so no real database or mail account is needed: each test group starts a throw-away in-memory MongoDB replica set and runs the real `app.js` against it. The first run downloads a MongoDB binary (several hundred MB) into a local cache. The tests cover sign-up persistence, and that unauthenticated requests are refused and one user cannot list, read, change or delete another user's data.
+Uses Node's built-in test runner (`node:test`) and `mongodb-memory-server`, so no real database or mail account is needed: each test group starts a throw-away in-memory MongoDB replica set and runs the real `app.js` against it. The first run downloads a MongoDB binary (several hundred MB) into a local cache. The tests cover sign-up persistence (and that the password hash is never returned), the cancel route, and that unauthenticated requests are refused and one user cannot list, read, change or delete another user's data.
 
 ## Known limitations
 
-- `POST /workflow/subscription/reminder` has no authentication.
-- Sign-up and sign-in responses include the stored password hash in `user`.
-- `PUT /subscriptions/:id/cancel` does not set the status by itself.
 - Renewal dates are not rolled forward after a renewal.
 - No input validation beyond the Mongoose schemas; field names `carrency` and `catagory` are misspelled and part of the API.
